@@ -1,0 +1,23 @@
+{
+  "name": "centerstreetpartners",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "cspwired.com — static site built from a Google Drive article library",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "build:local": "node build/build.mjs --local",
+    "build:local:reviewed": "node build/build.mjs --local --with-pending-copy",
+    "sync": "node build/sync-only.mjs",
+    "extract-seed": "node build/extract-seed.mjs"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1",
+    "sanitize-html": "^2.13.1"
+  },
+  "devDependencies": {
+    "cheerio": "^1.2.0"
+  }
+}

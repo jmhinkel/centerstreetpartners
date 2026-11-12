@@ -1,0 +1,34 @@
+[build]
+  # --local means "do not touch Drive". That is deliberate: the Drive sync runs
+  # in the GitHub Action, which commits content/ to the repo, and Netlify builds
+  # whatever that commit contains. Netlify's filesystem does not survive a build,
+  # so syncing here would leave no record of what was published.
+  command = "npm run build:local"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Set INCLUDE_PENDING_COPY = "1" here once compliance clears the "How We Help"
+  # section and the new hero line. Until then those blocks are cut from the build.
+
+# /articles/some-slug should serve articles/some-slug.html
+[[redirects]]
+  from = "/articles/:slug"
+  to = "/articles/:slug.html"
+  status = 200
+
+[[redirects]]
+  from = "/landing-page"
+  to = "/landing-page.html"
+  status = 200
+
+# Hashed filenames, so these can be cached hard.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/articles/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

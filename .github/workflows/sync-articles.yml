@@ -1,0 +1,57 @@
+name: Publish articles from Drive
+
+# Two ways to run:
+#   - "Run workflow" button on the Actions tab — use this to publish immediately
+#   - every 2 hours, as a safety net so a forgotten article still goes out
+#
+# What it does NOT do is build the site. It syncs Drive into content/ and commits
+# that. The commit is what Netlify builds, and it is also the compliance record of
+# what was published and when.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */2 * * *'
+
+# Needed so the job can push the content/ commit back to main.
+permissions:
+  contents: write
+
+# A scheduled run and a manual run at the same moment would race to push.
+concurrency:
+  group: publish-articles
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pull articles from Drive
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          DRIVE_ARTICLES_FOLDER_ID: ${{ secrets.DRIVE_ARTICLES_FOLDER_ID }}
+        run: node build/sync-only.mjs
+
+      - name: Commit any changes
+        run: |
+          git config user.name  "Article sync"
+          git config user.email "noreply@cspwired.com"
+          git add content site/articles/images
+          if git diff --staged --quiet; then
+            echo "No article changes — nothing to publish."
+            exit 0
+          fi
+          # Name the articles in the message so the Git history reads as a
+          # publication log rather than a wall of identical commits.
+          CHANGED=$(git diff --staged --name-only -- content \
+            | awk -F/ '{print $2}' | sort -u | paste -sd', ' -)
+          git commit -m "Publish from Drive: ${CHANGED}"
+          git push
